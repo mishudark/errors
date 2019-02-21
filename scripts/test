@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -ex
+
+go test -v $(go list ./... | grep -v /example) | tee /dev/tty |  go-junit-report > junit-report.xml; test ${PIPESTATUS[0]} -eq 0

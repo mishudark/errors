@@ -1,0 +1,13 @@
+language: go
+go:
+- "1.11"
+go_import_path: github.com/mishudark/errors
+install:
+- make travis-dep
+script:
+- "./scripts/test"
+- "./scripts/test-coverage"
+after_failure:
+- reports-publisher
+after_success:
+- reports-publisher

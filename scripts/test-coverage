@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -ex
+
+MODE="count"
+
+echo "mode: $MODE" > profile.cov
+
+# |grep -v /spec excludes integration tests from executing
+for dir in $(go list ./... | grep -v /example);
+do
+    go test -covermode=${MODE} -coverprofile=profile.tmp ${dir}
+    if [ -f profile.tmp ]
+    then
+        cat profile.tmp | tail -n +2 >> profile.cov
+        rm profile.tmp
+    fi
+done
+
+go tool cover -func profile.cov
+
+gocov convert profile.cov | gocov-xml > coverage.xml
