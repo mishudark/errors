@@ -13,6 +13,7 @@ func TestError_E(t *testing.T) {
 		name   string
 		args   []interface{}
 		expect error
+		nilErr bool
 	}{
 		{
 			name: "only error",
@@ -63,11 +64,11 @@ func TestError_E(t *testing.T) {
 			name: "underlayin errors.Error type",
 			args: []interface{}{
 				"geting foo from db",
-				E("network latency", IO, errDummy),
+				E(errDummy, "network latency", IO),
 			},
 			expect: &Error{
 				s:     "geting foo from db",
-				cause: E("network latency", IO, errDummy),
+				cause: E(errDummy, "network latency", IO),
 				Kind:  IO,
 			},
 		},
@@ -75,11 +76,11 @@ func TestError_E(t *testing.T) {
 			name: "underlayin errors.Meda",
 			args: []interface{}{
 				"geting foo from db",
-				E("network latency", IO, errDummy, MetaData{"1": 1}),
+				E(errDummy, "network latency", IO, MetaData{"1": 1}),
 			},
 			expect: &Error{
 				s:     "geting foo from db",
-				cause: E("network latency", IO, errDummy, MetaData{"1": 1}),
+				cause: E(errDummy, "network latency", IO, MetaData{"1": 1}),
 				Kind:  IO,
 				Meta:  MetaData{"1": 1},
 			},
@@ -90,13 +91,19 @@ func TestError_E(t *testing.T) {
 				"network latency",
 				IO,
 			},
+			nilErr: true,
 			expect: nil,
 		},
 	}
 
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			err := E(tt.args...)
+			errOrig := errDummy
+			if tt.nilErr {
+				errOrig = nil
+			}
+
+			err := E(errOrig, tt.args...)
 			if !reflect.DeepEqual(tt.expect, err) {
 				t.Errorf("expected: %+v, got: %+v", tt.expect, err)
 			}
@@ -140,7 +147,7 @@ func TestError_Msg(t *testing.T) {
 
 func TestError_MarshalJSON(t *testing.T) {
 	errDummy := New("foo")
-	er := E("network latency", IO, errDummy, MetaData{"foo": "bar"})
+	er := E(errDummy, "network latency", IO, MetaData{"foo": "bar"})
 	b, err := json.Marshal(er)
 	if err != nil {
 		t.Error(err)
@@ -155,10 +162,10 @@ func TestError_MarshalJSON(t *testing.T) {
 }
 
 func TestError_Error(t *testing.T) {
-	errIO := E("io error", IO, New("network unreachable"))
-	errUnmarshal := E("can't unmarshal bar", Unmarshal, errIO)
-	errDecrypt := E("invalid key", Decrypt, errUnmarshal)
-	megaError := E("no part of group", Permission, errDecrypt)
+	errIO := E(New("network unreachable"), "io error", IO)
+	errUnmarshal := E(errIO, "can't unmarshal bar", Unmarshal)
+	errDecrypt := E(errUnmarshal, "invalid key", Decrypt)
+	megaError := E(errDecrypt, "no part of group", Permission)
 
 	tc := []struct {
 		name   string
@@ -219,13 +226,13 @@ func TestIsKind(t *testing.T) {
 		},
 		{
 			name:   "wrong kind",
-			err:    E(Duplicated, "hi", fmt.Errorf("hi")),
+			err:    E(fmt.Errorf("hi"), Duplicated, "hi"),
 			kind:   Invalid,
 			expect: false,
 		},
 		{
 			name:   "correct kind",
-			err:    E(Duplicated, "hi", fmt.Errorf("hi")),
+			err:    E(fmt.Errorf("hi"), Duplicated, "hi"),
 			kind:   Duplicated,
 			expect: true,
 		},

@@ -134,8 +134,14 @@ func (k Kind) StatusCode() int {
 // If Kind is not specified or Unknown, we set it to the Kind of
 // the underlying error.
 // If MetaData is not defined, we use the underlaying MetaData
-func E(args ...interface{}) error {
-	e := &Error{}
+func E(err error, args ...interface{}) error {
+	if err == nil {
+		return nil
+	}
+
+	e := &Error{
+		cause: err,
+	}
 
 	for _, arg := range args {
 		switch opt := arg.(type) {
@@ -156,15 +162,9 @@ func E(args ...interface{}) error {
 			// Make a copy
 			copy := *opt
 			e.cause = &copy
-		case error:
-			e.cause = opt
 			//default:
 			//	return Errorf("unknown type %T, value %v in error call", arg, arg)
 		}
-	}
-
-	if e.cause == nil {
-		return nil
 	}
 
 	// Fill missing fileds in case previous error is a Error type
