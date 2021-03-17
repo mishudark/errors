@@ -51,6 +51,7 @@ const (
 	Transient                 // A transient error.
 	Unsupported               // An unsupported media type.
 	NotAcceptable             // We cannot accept the provided media types.
+	Timeout                   // Operation timed out
 )
 
 // String transforms enums into string, useful for encoders
@@ -82,6 +83,8 @@ func (k Kind) String() string {
 		return "unsupported"
 	case NotAcceptable:
 		return "not accepted"
+	case Timeout:
+		return "timed out"
 	}
 	return "unknown error kind"
 }
@@ -106,6 +109,8 @@ func (k Kind) StatusCode() int {
 		return http.StatusNotAcceptable
 	case Duplicated:
 		return http.StatusConflict
+	case Timeout:
+		return http.StatusRequestTimeout
 	case Unknown:
 	case Internal:
 	case IO:
